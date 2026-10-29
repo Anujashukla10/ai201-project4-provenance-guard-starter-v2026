@@ -37,7 +37,7 @@ WEIGHT_STYLE_SIGNAL = 0.4
 
 # If the two signals differ by this much or more, the combined score is pulled
 # into the "unsure" band. Two methods disagreeing IS uncertainty.
-DISAGREEMENT_GAP = 0.4
+DISAGREEMENT_GAP = 0.5
 
 
 # ─── Thresholds (Milestone 5) ────────────────────────────────────────────────
@@ -48,8 +48,8 @@ DISAGREEMENT_GAP = 0.4
 # AI_THRESHOLD is set high on purpose: fewer wrong accusations, at the cost of
 # letting more AI text land in "unsure".
 
-HUMAN_THRESHOLD = 0.40
-AI_THRESHOLD = 0.70
+HUMAN_THRESHOLD = 0.31
+AI_THRESHOLD = 0.55
 
 
 # ─── Rate limiting (UNIT 8) ──────────────────────────────────────────────────
