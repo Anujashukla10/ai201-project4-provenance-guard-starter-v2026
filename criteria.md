@@ -42,62 +42,67 @@ Two things worth knowing before you pick numbers:
   a **miss**.
 
 ---
-## 1.
+## 1. My own writing is rarely accused
 
-<!-- Your criterion. It must name a number. -->
+Of 10 pieces I wrote myself (each at least 100 words), at most 1 receives the
+high-confidence AI label, in each of 3 separate trials.
 
-
-
-**Why this target:**
-
-
-
----
-
-## 2.
-
-<!-- Your criterion. -->
-
-
-
-**Why this target:**
-
-
+**Why this target:** On a writing site, a wrong accusation costs a real person
+their reputation, while a missed AI piece costs the site much less. My first
+signal (GPT-2 predictability) is known to score plain, simple writing as
+machine-like, so I want a hard ceiling on how often my own plain writing gets
+accused. 1 in 10 is the most I would accept if it were my work being judged.
 
 ---
 
-## 3.
+## 2. Clearly AI and clearly human text are far apart
 
-<!-- Your criterion. -->
+The instructor's clearly_ai sample scores at least 0.30 higher than the
+clearly_human sample on the combined confidence score, and the borderline
+sample scores between them, in all 3 trials.
 
-
-
-**Why this target:**
-
-
-
----
-
-## 4.
-
-<!-- Your criterion. -->
-
-
-
-**Why this target:**
-
-
+**Why this target:** If my two signals can't separate the obvious cases by a
+wide margin, then my thresholds at 0.40 and 0.70 are meaningless. A gap of
+0.30 is wide enough that the two ends can land in different labels.
 
 ---
 
-## 5.
+## 3. All three labels are reachable
 
-<!-- Your criterion. -->
+Across a set of 10 texts (the 3 instructor samples plus 7 of my own chosen to
+span plain, formal, casual and AI-edited writing), each of the three labels —
+high-confidence human, unsure, high-confidence AI — appears at least once.
 
+**Why this target:** A label that can never appear is dead code that hides a
+gap in my score ranges. My combining rule clamps disagreeing signals into the
+unsure band, which could starve the other two labels, so I need to check that
+both ends are still reachable.
 
+---
 
-**Why this target:**
+## 4. Every appeal is recorded and changes status
 
+For 5 out of 5 appeals sent with a real content_id, POST /appeal returns 200
+with status "under_review", and GET /log shows a new appeal entry for that
+content_id after the original decision. An appeal with a made-up content_id
+returns 404 in 3 of 3 attempts and does not add an appeal entry.
+
+**Why this target:** The appeal is the only thing standing between a wrong
+accusation and nothing. If it ever silently fails, the writer believes they
+have been heard when they have not, so the target is 100%, not "most".
+
+---
+
+## 5. Bad input never crashes the service
+
+Each of these returns a 4xx status with a JSON error message, never a 500:
+missing "text", empty "text", "text": null, a body that is not JSON, text
+under 3 tokens, and text over 20,000 characters. Each one also writes a
+"rejected" entry to logs/audit.jsonl. Target: 6 of 6 cases, in 3 of 3 trials.
+
+**Why this target:** A crash looks like a broken site to an honest writer and
+an opportunity to an attacker. Rejections are also logged, because an attack
+that only shows up as an absence can't be diagnosed.
 
 
 ---
