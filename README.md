@@ -279,6 +279,17 @@ $ curl.exe -X POST http://127.0.0.1:5000/submit -H "Content-Type: application/js
 
 <!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
 
+## Unit 8 stretch features (declared before building)
+
+I am attempting all three stretch features:
+
+1. **Per-creator rate limits** — limits keyed to `creator_id`, falling back to
+   the caller's address only when no creator_id is sent.
+2. **A second measured improvement** — a second change from my diagnosis, with
+   a third attack run and run log (`--label after2`) in the same format.
+3. **Three attacks on someone else's system** — three inputs I send to a
+   classmate's Provenance Guard, with what each one did.
+   
 ---
 
 ## Rate Limiting
