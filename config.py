@@ -54,7 +54,7 @@ AI_THRESHOLD = 0.55
 
 # ─── Rate limiting (UNIT 8) ──────────────────────────────────────────────────
 
-RATE_LIMITING_ENABLED = os.getenv("AI201_RATE_LIMITS", "0") == "1"
+RATE_LIMITING_ENABLED = True
 RATE_LIMIT_PER_MINUTE = 10
 RATE_LIMIT_PER_DAY = 200
 RATE_LIMIT_STORAGE = "memory://"

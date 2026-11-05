@@ -289,24 +289,69 @@ I am attempting all three stretch features:
    a third attack run and run log (`--label after2`) in the same format.
 3. **Three attacks on someone else's system** — three inputs I send to a
    classmate's Provenance Guard, with what each one did.
-   
+
 ---
 
 ## Rate Limiting
 
-**My limits:** ___ per minute, ___ per day
+**My limits:** 10 per minute, 200 per day (`config.py`; applied to
+`app.py::submit` with `@limiter.limit`).
 
-**Why those numbers and not others:**
+**Why those numbers and not others:** A real writer submits their own work a
+few times an hour; even someone re-submitting drafts while editing rarely sends
+more than a handful in a minute, so 10/minute never touches them. A script
+mapping my thresholds needs hundreds of near-identical variations to find where
+0.31 and 0.55 sit. At 10/minute and 200/day one creator can probe at most 200
+points a day, which makes threshold-mapping slow and very visible in the log.
 
-**What a caller counts as:**
+**What a caller counts as:** per `creator_id` (stretch feature), falling back to
+the IP address when a request has no usable creator_id
+(`app.py::rate_limit_key`).
+
+**What per-creator limiting changes (stretch):** It catches one account
+flooding from many addresses (VPN, phone + laptop), which per-address limiting
+misses, and it doesn't punish several honest writers sharing one household or
+school address. The cost: creator_id is whatever the caller sends, so a script
+that invents a new creator_id per request is never limited — the attack set
+does exactly that (each row is `attacker_<id>`). A real site would key on a
+logged-in account instead.
 
 **The run of status codes when I pushed past it:**
 
-<!-- python run_attacks.py --flood 15 -->
+`python run_attacks.py --flood 15` (`run_attacks.py::run_flood`, also saved to
+`results/flood_2026-11-04_2020.md`):
 
 ```
-
+200 200 200 200 200 200 200 200 200 200 429 429 429 429 429
 ```
+
+**The rejections in the audit log** (`curl.exe "http://127.0.0.1:5000/log?limit=7"`,
+last two accepted requests then the first of the five rejections):
+
+```json
+{
+  "combined_score": 0.2456,
+  "content_id": "c4256da755e2",
+  "creator_id": "flood_tester",
+  "guess": "human",
+  "label": "We think this was written by a person.",
+  "model_score": 0.2587,
+  "status": "decided",
+  "style_score": 0.226,
+  "timestamp": "2026-11-05T02:20:52+00:00"
+}
+{
+  "creator_id": "flood_tester",
+  "event": "rejected",
+  "limit": "10 per 1 minute",
+  "reason": "rate_limited",
+  "status": "rejected",
+  "timestamp": "2026-11-05T02:20:52+00:00"
+}
+```
+
+Each of the five 429s left one `rejected` entry like the one above, so a flood
+shows up in the log rather than as an absence.
 
 ---
 
