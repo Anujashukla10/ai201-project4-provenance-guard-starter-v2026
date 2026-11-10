@@ -4,23 +4,11 @@ Provenance Guard — the web service.
 
     python app.py
 
-Then, in another terminal:
-
-    curl -X POST http://127.0.0.1:5000/ping \
-      -H "Content-Type: application/json" \
-      -d '{"message": "hello"}'
-
-That's the example route. It works right now, before you've written anything.
-**Leave it alone** — it's your control. When something breaks later, check that
-`/ping` still answers: if it does, the problem is in your handler; if it
-doesn't, it's the service itself.
-
 Routes:
-
-    POST /ping        the worked example. Already works. Don't edit it
-    POST /submit      ← YOU BUILD THIS (Milestone 3, 4, 5)
-    POST /appeal      ← YOU BUILD THIS (Milestone 5)
-    GET  /log         the audit log. Already works
+    POST /ping        the worked example. Don't edit it
+    POST /submit      text in -> guess, confidence, label, both signal scores
+    POST /appeal      writer disagrees -> status under_review
+    GET  /log         the audit log
     GET  /health      is the service up, and is the model loaded
 """
 
@@ -50,6 +38,7 @@ if config.RATE_LIMITING_ENABLED:
     from flask_limiter.util import get_remote_address
 
     def rate_limit_key():
+        """Per creator_id; falls back to the caller's address."""
         payload = request.get_json(silent=True)
         if not isinstance(payload, dict):
             return get_remote_address()
@@ -100,6 +89,8 @@ def health():
         "detector_model": config.DETECTOR_MODEL,
         "detector_loaded": loaded,
         "rate_limiting": config.RATE_LIMITING_ENABLED,
+        "min_words": config.MIN_WORDS,
+        "ai_threshold": config.AI_THRESHOLD,
         "log_entries": len(audit.read_entries()),
     })
 
@@ -115,14 +106,6 @@ def _reject(creator_id, reason, status, message, **extra):
 @app.post("/submit")
 @limiter.limit(f"{config.RATE_LIMIT_PER_MINUTE}/minute;{config.RATE_LIMIT_PER_DAY}/day")
 def submit():
-    """
-    Take a piece of text, score it with two signals, label it, log it.
-
-    In:  {"text": "...", "creator_id": "..."}
-    Out: {"content_id", "guess", "confidence", "label",
-          "model_score", "style_score", "status"}
-    """
-    # 1. Must be a JSON object
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return _reject("unknown", "bad_request", 400,
@@ -131,7 +114,6 @@ def submit():
     text = payload.get("text")
     creator_id = payload.get("creator_id")
 
-    # 2. Validate creator_id and text
     if not isinstance(creator_id, str) or not creator_id.strip():
         return _reject("unknown", "missing_creator_id", 400,
                        'Send a non-empty "creator_id".')
@@ -145,7 +127,14 @@ def submit():
                        f"Text must be under {config.MAX_TEXT_CHARS} characters.",
                        length=len(text))
 
-    # 3. Signal one — the model
+    # Improvement 2 (off while MIN_WORDS = 0): refuse input with too few real
+    # words, so control characters, emoji, punctuation and one-word strings
+    # are not scored as if they were writing.
+    if config.MIN_WORDS and len(stylometry.words(text)) < config.MIN_WORDS:
+        return _reject(creator_id, "not_enough_words", 400,
+                       f"Please submit at least {config.MIN_WORDS} words of "
+                       f"writing so it can be assessed.")
+
     try:
         model_score = detector.model_signal(text)
     except ValueError:
@@ -154,14 +143,10 @@ def submit():
     except detector.DetectorUnavailable as exc:
         return _reject(creator_id, "detector_unavailable", 503, str(exc))
 
-    # 4. Signal two — the style
     style_score = stylometry.style_signal(text)
-
-    # 5. Combine and label
     combined = scoring.combine_signals(model_score, style_score)
     guess, label = scoring.score_to_label(combined)
 
-    # 6. Log the decision
     content_id = uuid.uuid4().hex[:12]
     audit.log_decision(
         content_id=content_id,
@@ -174,7 +159,6 @@ def submit():
         status="decided",
     )
 
-    # 7. Answer
     return jsonify({
         "content_id": content_id,
         "guess": guess,
@@ -190,12 +174,6 @@ def submit():
 
 @app.post("/appeal")
 def appeal():
-    """
-    A writer says we got it wrong.
-
-    In:  {"content_id": "...", "reasoning": "..."}
-    Out: {"content_id", "status": "under_review", "message", "original_label"}
-    """
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "bad_request",
@@ -211,7 +189,6 @@ def appeal():
         return jsonify({"error": "bad_request",
                         "message": "Tell us why you think we got it wrong."}), 400
 
-    # Does this content_id actually exist as a decision?
     history = audit.entries_for(content_id)
     decisions = [e for e in history if e.get("event") is None]
     if not decisions:
@@ -244,9 +221,8 @@ def get_log():
 
 def main():
     print(f"Provenance Guard on http://{config.HOST}:{config.PORT}")
-    print(f"  detector model:  {config.DETECTOR_MODEL}")
-    print(f"  rate limiting:   {'ON' if config.RATE_LIMITING_ENABLED else 'off (unit 8)'}")
-    print(f"  audit log:       {config.AUDIT_LOG}")
+    print(f"  rate limiting:   {'ON' if config.RATE_LIMITING_ENABLED else 'off'}")
+    print(f"  AI threshold:    {config.AI_THRESHOLD}   min words: {config.MIN_WORDS}")
     app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)
 
 
