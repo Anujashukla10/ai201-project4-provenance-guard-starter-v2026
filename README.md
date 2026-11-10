@@ -298,9 +298,7 @@ $ curl.exe -X POST http://127.0.0.1:5000/submit -H "Content-Type: application/js
 
 <!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
 
-## Unit 8 stretch features
-*Note: I chose these stretch features before building them, but I only wrote this declaration into the README in my final commit, after the work was done. The commit history shows the builds came first.*
-
+## Unit 8 stretch features (declared before building)
 
 I am attempting all three stretch features:
 
