@@ -44,7 +44,7 @@ DISAGREEMENT_GAP = 0.5
 #   score >= AI_THRESHOLD            -> high-confidence AI
 
 HUMAN_THRESHOLD = 0.31
-AI_THRESHOLD = 0.55
+AI_THRESHOLD = 0.78
 
 
 # ─── Rate limiting (UNIT 8) ──────────────────────────────────────────────────
