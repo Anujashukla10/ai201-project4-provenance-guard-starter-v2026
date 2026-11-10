@@ -28,7 +28,7 @@ MAX_TEXT_CHARS = 20000
 
 # Unit 8, improvement 2 (stretch): refuse text with fewer than this many real
 # words before the signals see it. 0 = off (the "before" and "after" runs).
-MIN_WORDS = 0
+MIN_WORDS = 5
 
 
 # ─── Scoring ─────────────────────────────────────────────────────────────────
